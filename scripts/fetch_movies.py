@@ -305,6 +305,7 @@ def scrape_douban(config, top_n, cookie_str=None):
                 "id": len(movies) + 1,
                 "title": title,
                 "poster_url": poster_url,
+                "poster_url_remote": poster_url,  # 保留原始豆瓣 CDN URL
                 "synopsis": quote,
                 "rating": rating,
                 "categories": categories,
@@ -333,24 +334,29 @@ def download_posters(movies, posters_dir, session=None, update_url=True):
         if os.path.exists(filepath):
             continue
 
-        # 如果 poster_url 是本地路径或为空，从 douban_url 获取海报 URL
+        # 优先用 poster_url_remote（原始豆瓣 CDN URL），直接下载不走详情页
+        remote_url = movie.get("poster_url_remote", "")
+
         if poster_url.startswith("data/") or not poster_url:
-            if not douban_url:
-                continue
-            try:
-                if session:
-                    resp = session.get(douban_url, headers=HEADERS, timeout=15)
-                else:
-                    resp = requests.get(douban_url, headers=HEADERS, timeout=15)
-                resp.raise_for_status()
-                soup = BeautifulSoup(resp.text, "html.parser")
-                img = soup.select_one("#mainpic img")
-                if not img or not img.get("src"):
+            # 有 CDN URL 直接用
+            if remote_url and remote_url.startswith("http"):
+                poster_url = remote_url
+            elif douban_url:
+                # 兜底：从详情页取（可能被 403）
+                try:
+                    if session:
+                        resp = session.get(douban_url, headers=HEADERS, timeout=15)
+                    else:
+                        resp = requests.get(douban_url, headers=HEADERS, timeout=15)
+                    resp.raise_for_status()
+                    soup = BeautifulSoup(resp.text, "html.parser")
+                    img = soup.select_one("#mainpic img")
+                    if not img or not img.get("src"):
+                        continue
+                    poster_url = img["src"]
+                except Exception as e:
+                    print(f"  获取海报URL失败 [{movie['title']}]: {e}")
                     continue
-                poster_url = img["src"]
-            except Exception as e:
-                print(f"  获取海报URL失败 [{movie['title']}]: {e}")
-                continue
 
         # 下载海报
         try:
