@@ -1,6 +1,6 @@
 # Movie Fetch
 
-豆瓣电影数据抓取工具，以 Claude Code Skill 形式运行。
+个人skill备份：豆瓣电影数据抓取工具，以 Claude Code Skill 形式运行。
 
 ## 功能
 
