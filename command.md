@@ -8,7 +8,24 @@ description: "MovieFairy 电影数据抓取工具"
 
 ## 步骤
 
-1. 根据用户描述确定操作类型和参数（ID 列表或 Top N）
+1. **先查后抓**: 用户问电影信息/播放源/海报时，先跑查询脚本看数据是否已有:
+   ```bash
+   bash __MOVIE_FETCH_DIR__/scripts/query.sh <命令> <目标> [平台]
+   ```
+   - 有数据 → 直接返回给用户
+   - 缺某平台 → 告诉用户有什么、缺什么，用户说补再走抓取流程
+   - 无数据 → 继续下面抓取流程
+
+   查询命令:
+   - `info <ID或电影名>` 基本信息
+   - `streaming <ID或电影名> [平台]` 播放源
+   - `open <ID或电影名> [平台]` 打开播放页面（用户说"打开"时用）
+   - `poster <ID或电影名>` 海报URL
+   - `list [N]` 列出前N部
+
+   目标支持: ID数字（不存在则自动匹配排名） / 完整电影名 / 部分关键词（自动模糊匹配）。信任脚本返回结果，不要二次确认。
+
+2. 根据用户描述确定操作类型和参数（ID 列表或 Top N）
 2. 运行环境检查：
    - 操作需要 movies.json 时：`bash __MOVIE_FETCH_DIR__/scripts/check_env.sh needs_data`
    - 其他操作：`bash __MOVIE_FETCH_DIR__/scripts/check_env.sh`
@@ -81,8 +98,8 @@ python3 __MOVIE_FETCH_DIR__/scripts/fetch_movies.py --top <N> --fetch-streaming 
 
 - 不带 `--top` 的操作从 movies.json 加载已有数据，不需要 cookie
 - 带 `--top` 的操作重新抓取，需要 cookie（豆瓣列表页需要登录）
-- 仅下载海报不需要 cookie
-- 抓取播放源需要 cookie
+- 仅下载海报不需要 cookie（通过 poster_url_remote CDN 直链下载，不走详情页）
+- 抓取播放源需要 cookie（需访问详情页，会被反爬拦截）
 - 数据保存在 __MOVIE_FETCH_DIR__/data/ 和 __MOVIE_FETCH_DIR__/js/
 - 不要修改 ~/Documents/MovieFairy/ 下的任何文件
 
